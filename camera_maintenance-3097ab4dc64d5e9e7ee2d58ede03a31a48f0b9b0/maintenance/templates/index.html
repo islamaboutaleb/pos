@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام الصيانة الوقائية للكاميرات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ====================== شاشة تسجيل الدخول ====================== -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="lens-mark"><span class="lens-ring"></span><span class="lens-ring"></span><span class="lens-dot"></span></div>
+      <h1>نظام الصيانة الوقائية</h1>
+      <p>لكاميرات المراقبة والمهام التشغيلية</p>
+    </div>
+    <form id="login-form" class="login-form">
+      <label>اسم المستخدم
+        <input type="text" id="login-username" autocomplete="username" required>
+      </label>
+      <label>كلمة المرور
+        <input type="password" id="login-password" autocomplete="current-password" required>
+      </label>
+      <div id="login-error" class="login-error hidden"></div>
+      <button type="submit" class="btn btn-primary btn-block">تسجيل الدخول</button>
+    </form>
+    <div class="login-hint">
+      <span>مدير: admin / admin123</span>
+      <span>فني: tech1 / tech123</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== هيكل التطبيق ====================== -->
+<div id="app-shell" class="app-shell hidden">
+
+  <!-- الشريط الجانبي -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="lens-mark sm"><span class="lens-ring"></span><span class="lens-ring"></span><span class="lens-dot"></span></div>
+      <div class="brand-text">
+        <strong>صيانة الكاميرات</strong>
+        <span>إدارة المهام والفروع</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="all">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span>كل المهام</span>
+      </button>
+      <button class="nav-item" data-view="camera">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M3 9h3l1.5-2h9L18 9h3v10H3z"/></svg>
+        <span>صيانة الكاميرات</span>
+      </button>
+      <button class="nav-item" data-view="normal">
+        <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+        <span>المهام العادية</span>
+      </button>
+      <button class="nav-item" data-view="reports">
+        <svg viewBox="0 0 24 24"><path d="M4 19h16M7 19V9m5 10V5m5 14v-7"/></svg>
+        <span>التقارير والتصدير</span>
+      </button>
+      <button class="nav-item admin-only" data-view="admin">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>
+        <span>الإدارة</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar">?</div>
+        <div class="user-meta">
+          <strong id="user-name">—</strong>
+          <span id="user-role">—</span>
+        </div>
+      </div>
+      <button id="logout-btn" class="icon-btn" title="تسجيل الخروج">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- زر القائمة للموبايل -->
+  <button id="mobile-menu-btn" class="mobile-menu-btn">
+    <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+
+  <!-- المحتوى الرئيسي -->
+  <main class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <h2 id="view-title">كل المهام</h2>
+        <p id="view-subtitle">عرض جميع المهام التشغيلية ومهام صيانة الكاميرات</p>
+      </div>
+      <div class="topbar-actions admin-only">
+        <button id="add-task-btn" class="btn btn-primary">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          مهمة جديدة
+        </button>
+      </div>
+    </header>
+
+    <!-- بطاقات الإحصائيات -->
+    <section class="stats-grid" id="stats-grid">
+      <div class="stat-card" data-stat="total">
+        <span class="stat-label">إجمالي المهام</span>
+        <strong class="stat-value" id="stat-total">0</strong>
+      </div>
+      <div class="stat-card stat-pending" data-stat="pending">
+        <span class="stat-label">قيد الانتظار</span>
+        <strong class="stat-value" id="stat-pending">0</strong>
+      </div>
+      <div class="stat-card stat-progress" data-stat="in_progress">
+        <span class="stat-label">قيد التنفيذ</span>
+        <strong class="stat-value" id="stat-progress">0</strong>
+      </div>
+      <div class="stat-card stat-done" data-stat="completed">
+        <span class="stat-label">مكتملة</span>
+        <strong class="stat-value" id="stat-done">0</strong>
+      </div>
+      <div class="stat-card stat-camera" data-stat="camera">
+        <span class="stat-label">صيانة كاميرات</span>
+        <strong class="stat-value" id="stat-camera">0</strong>
+      </div>
+    </section>
+
+    <!-- منطقة المهام -->
+    <section id="view-tasks" class="view-section">
+      <div class="toolbar">
+        <div class="toolbar-tabs" id="status-tabs">
+          <button class="tab active" data-status="">الكل</button>
+          <button class="tab" data-status="قيد الانتظار">قيد الانتظار</button>
+          <button class="tab" data-status="قيد التنفيذ">قيد التنفيذ</button>
+          <button class="tab" data-status="مكتمل">مكتمل</button>
+        </div>
+        <div class="toolbar-filters">
+          <select id="filter-zone"><option value="">كل المناطق</option></select>
+          <select id="filter-technician" class="admin-only"><option value="">كل الفنيين</option></select>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="text" id="search-input" placeholder="بحث بالكود أو العنوان…">
+          </div>
+        </div>
+      </div>
+
+      <div id="task-list" class="task-list"></div>
+      <div id="empty-state" class="empty-state hidden">
+        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <h3>لا توجد مهام مطابقة</h3>
+        <p>جرّب تغيير الفلاتر أو إضافة مهمة جديدة</p>
+      </div>
+    </section>
+
+    <!-- منطقة التقارير -->
+    <section id="view-reports" class="view-section hidden">
+      <div class="reports-grid">
+        <div class="report-card">
+          <div class="report-icon camera-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M3 9h3l1.5-2h9L18 9h3v10H3z"/></svg>
+          </div>
+          <h3>تقرير الصيانة الوقائية للكاميرات</h3>
+          <p>تصدير كامل بيانات مهام صيانة الكاميرات مع الفروع المنجزة</p>
+          <div class="report-actions">
+            <button class="btn btn-outline" data-export="excel" data-type="camera">Excel</button>
+            <button class="btn btn-outline" data-export="pdf" data-type="camera">PDF</button>
+          </div>
+        </div>
+        <div class="report-card">
+          <div class="report-icon normal-icon">
+            <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+          </div>
+          <h3>تقرير المهام الكامل</h3>
+          <p>تصدير جميع المهام العادية ومهام صيانة الكاميرات معاً</p>
+          <div class="report-actions">
+            <button class="btn btn-outline" data-export="excel" data-type="all">Excel</button>
+            <button class="btn btn-outline" data-export="pdf" data-type="all">PDF</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- منطقة الإدارة -->
+    <section id="view-admin" class="view-section hidden">
+      <div class="admin-subtabs">
+        <button class="tab active" data-admin-tab="zones">المناطق والفروع</button>
+        <button class="tab" data-admin-tab="technicians">الفنيون</button>
+        <button class="tab" data-admin-tab="users">المستخدمون</button>
+      </div>
+
+      <!-- إدارة المناطق والفروع -->
+      <div id="admin-tab-zones" class="admin-tab-panel">
+        <form id="add-zone-form" class="inline-form">
+          <input type="text" id="zone-name" placeholder="اسم منطقة جديدة" required>
+          <button type="submit" class="btn btn-primary">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            إضافة منطقة
+          </button>
+        </form>
+        <div id="zones-manage-list" class="zones-manage-list"></div>
+      </div>
+
+      <!-- إدارة الفنيين -->
+      <div id="admin-tab-technicians" class="admin-tab-panel hidden">
+        <form id="add-technician-form" class="inline-form">
+          <input type="text" id="tech-name" placeholder="اسم الفني" required>
+          <input type="text" id="tech-phone" placeholder="رقم الهاتف (اختياري)">
+          <button type="submit" class="btn btn-primary">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            إضافة فني
+          </button>
+        </form>
+        <div id="technicians-list" class="technicians-list"></div>
+      </div>
+
+      <!-- إدارة المستخدمين -->
+      <div id="admin-tab-users" class="admin-tab-panel hidden">
+        <div class="toolbar">
+          <h3 style="margin:0">حسابات الدخول (مديرون وفنيون)</h3>
+          <button id="add-user-btn" class="btn btn-primary">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            حساب جديد
+          </button>
+        </div>
+        <div id="users-list" class="users-list"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ====================== مودال إضافة/تعديل مستخدم ====================== -->
+<div id="modal-user" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="user-modal-title">حساب جديد</h3>
+      <button class="modal-close" data-close>&times;</button>
+    </div>
+    <form id="user-form" class="modal-body">
+      <input type="hidden" id="user-id">
+
+      <div class="field-group">
+        <label class="field-label" for="user-full-name">الاسم الكامل</label>
+        <input type="text" id="user-full-name" required>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label" for="user-username">اسم المستخدم</label>
+          <input type="text" id="user-username" required autocomplete="off">
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="user-password">
+            كلمة المرور <span id="user-password-hint" class="field-hint"></span>
+          </label>
+          <input type="password" id="user-password" autocomplete="new-password">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">نوع الحساب</label>
+        <div class="type-toggle">
+          <label class="type-option">
+            <input type="radio" name="user_role" value="admin" checked>
+            <span class="type-card">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>
+              مدير
+            </span>
+          </label>
+          <label class="type-option">
+            <input type="radio" name="user_role" value="technician">
+            <span class="type-card camera">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>
+              فني
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field-group" id="user-technician-field">
+        <label class="field-label" for="user-technician-select">الفني المرتبط بالحساب</label>
+        <select id="user-technician-select">
+          <option value="">اختر الفني…</option>
+        </select>
+        <p class="field-hint">يجب إضافة الفني أولاً من تبويب "الفنيون" قبل ربطه بحساب.</p>
+      </div>
+
+      <label class="checkbox-inline">
+        <input type="checkbox" id="user-is-active" checked>
+        الحساب مفعّل (يمكنه تسجيل الدخول)
+      </label>
+
+      <div id="user-form-error" class="form-error hidden"></div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-close>إلغاء</button>
+        <button type="submit" class="btn btn-primary">حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ====================== مودال إضافة مهمة ====================== -->
+<div id="modal-create" class="modal-overlay hidden">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>مهمة جديدة</h3>
+      <button class="modal-close" data-close>&times;</button>
+    </div>
+    <form id="create-task-form" class="modal-body">
+
+      <div class="field-group">
+        <label class="field-label">نوع المهمة</label>
+        <div class="type-toggle">
+          <label class="type-option">
+            <input type="radio" name="task_type" value="normal" checked>
+            <span class="type-card">
+              <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+              مهمة عادية
+            </span>
+          </label>
+          <label class="type-option">
+            <input type="radio" name="task_type" value="camera">
+            <span class="type-card camera">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M3 9h3l1.5-2h9L18 9h3v10H3z"/></svg>
+              صيانة وقائية للكاميرات
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label" for="task-title">عنوان المهمة (اختياري)</label>
+          <input type="text" id="task-title" placeholder="سيتم إنشاؤه تلقائياً إن تُرك فارغاً">
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="task-kind">نوع الصيانة</label>
+          <select id="task-kind" required>
+            <option value="وقائية">وقائية</option>
+            <option value="تنظيف">تنظيف</option>
+            <option value="طارئة">طارئة</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label" for="task-zone">المنطقة المستهدفة</label>
+          <select id="task-zone" required>
+            <option value="">اختر المنطقة…</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="task-technician">الفني المسؤول</label>
+          <select id="task-technician">
+            <option value="">بدون تحديد</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="branches-header">
+          <label class="field-label">الفروع المستهدفة</label>
+          <label class="checkbox-inline">
+            <input type="checkbox" id="task-all-branches">
+            تحديد كل الفروع
+          </label>
+        </div>
+        <div id="task-branches-grid" class="branches-grid">
+          <p class="placeholder-text">اختر المنطقة أولاً لعرض الفروع</p>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label" for="task-start-date">تاريخ البدء</label>
+          <input type="date" id="task-start-date" required>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="task-notes">ملاحظات (اختياري)</label>
+        <textarea id="task-notes" rows="2" placeholder="أي تفاصيل إضافية حول المهمة…"></textarea>
+      </div>
+
+      <div id="create-task-error" class="form-error hidden"></div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-close>إلغاء</button>
+        <button type="submit" class="btn btn-primary">إضافة المهمة</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ====================== مودال إكمال المهمة ====================== -->
+<div id="modal-complete" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>تحديد الفروع المنجزة</h3>
+      <button class="modal-close" data-close>&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">حدّد الفروع التي تم إنجاز الصيانة فيها بالفعل لإكمال المهمة <strong id="complete-task-code"></strong></p>
+      <label class="checkbox-inline checkbox-strong">
+        <input type="checkbox" id="complete-all-branches">
+        كل الفروع تم إنجازها
+      </label>
+      <div id="complete-branches-grid" class="branches-grid"></div>
+      <div id="complete-task-error" class="form-error hidden"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-close>إلغاء</button>
+        <button type="button" id="confirm-complete-btn" class="btn btn-success">تأكيد الإكمال</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== مودال تفاصيل المهمة ====================== -->
+<div id="modal-details" class="modal-overlay hidden">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>تفاصيل المهمة</h3>
+      <button class="modal-close" data-close>&times;</button>
+    </div>
+    <div class="modal-body" id="details-body"></div>
+  </div>
+</div>
+
+<!-- حاوية التنبيهات -->
+<div id="toast-container" class="toast-container"></div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
